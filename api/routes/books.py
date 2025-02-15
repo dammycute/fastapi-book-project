@@ -63,7 +63,7 @@ async def delete_book(book_id: int) -> None:
 
 
 # Implementing the missing GET `/api/v1/{book_id}` endpoint
-@router.get("/api/v1/{book_id}", response_model=Book, status_code=status.HTTP_200_OK)
+@router.get("/{book_id}", response_model=Book, status_code=status.HTTP_200_OK)
 async def get_book(book_id: int):
     book = db.books.get(book_id)
     if not book:
