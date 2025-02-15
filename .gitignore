@@ -124,6 +124,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+htcode
 env/
 venv/
 ENV/
