@@ -21,10 +21,14 @@ jobs:
       - name: Run FastAPI application
         run: |
           uvicorn main:app --host 0.0.0.0 --port 8000 &
+      - name: Install Ngrok (v3.6.0+)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -O ngrok.tgz
+          sudo tar -xzf ngrok.tgz -C /usr/local/bin
+          rm ngrok.tgz
       - name: Expose application with Ngrok
         run: |
-          sudo apt-get install -y wget unzip
-          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-          unzip ngrok-stable-linux-amd64.zip
-          ./ngrok authtoken 2Nsxz3BYRSvviZu0o8GTj6r7ZlK_JaCUB7nxkmSA7ZEDfMmB
-          ./ngrok http 8000
+          ngrok config add-authtoken <your-ngrok-authtoken>
+          ngrok http 8000
