@@ -1,4 +1,4 @@
-name: Deploy Application
+name: CD Pipeline
 
 on:
   push:
@@ -9,20 +9,63 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      # Step 1: Checkout the repository
+      - uses: actions/checkout@v3
 
+      # Step 2: Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.9"
 
+      # Step 3: Install Python dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Deploy Application
+      # Step 4: Install Nginx
+      - name: Install Nginx
         run: |
-          # Add deployment script here
-          echo "Deploying FastAPI app..."
+          sudo apt-get update
+          sudo apt-get install -y nginx
+
+      # Step 5: Configure Nginx as a reverse proxy for FastAPI
+      - name: Configure Nginx
+        run: |
+          sudo bash -c 'cat > /etc/nginx/sites-available/fastapi-app <<EOF
+          server {
+              listen 80;
+              server_name localhost;
+
+              location / {
+                  proxy_pass http://127.0.0.1:8000;
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+          }
+          EOF'
+          sudo ln -sf /etc/nginx/sites-available/fastapi-app /etc/nginx/sites-enabled/
+          sudo nginx -t
+          sudo systemctl restart nginx
+
+      # Step 6: Run FastAPI application with Uvicorn
+      - name: Run FastAPI application
+        run: |
+          uvicorn main:app --host 0.0.0.0 --port 8000 &
+
+      # Step 7: Install Ngrok (v3.6.0+)
+      - name: Install Ngrok
+        run: |
+          sudo apt-get install -y wget unzip
+          wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -O ngrok.tgz
+          sudo tar -xzf ngrok.tgz -C /usr/local/bin
+          rm ngrok.tgz
+
+      # Step 8: Expose Nginx with Ngrok
+      - name: Expose Nginx with Ngrok
+        run: |
+          ngrok config add-authtoken 2Nsxz3BYRSvviZu0o8GTj6r7ZlK_JaCUB7nxkmSA7ZEDfMmB
+          ngrok http 80
